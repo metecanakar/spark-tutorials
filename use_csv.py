@@ -15,10 +15,18 @@ import findspark
 findspark.init(spark_home = "C:\spark")
 
 from pyspark.sql import SparkSession
+from pyspark import SparkContext, SparkConf
 
 from pyspark.sql.functions import *
+from pyspark.sql import Window
 from pyspark.sql.types import IntegerType
 
+#just to get the version
+sc_conf = SparkConf()
+sc = SparkContext(conf=sc_conf)
+print(sc.version)
+
+#create a SparkSession
 spark = SparkSession.builder.appName('SPARK SQL').getOrCreate()
 
 def read_csvs():
@@ -63,11 +71,56 @@ if __name__ == "__main__":
     print("For each book id get the total sum of the ratings then order by sum(rating) and book_id")
     df_ratings.groupBy("book_id").sum("rating").orderBy(["sum(rating)", "book_id"], ascending = False).show()
     
-    print("Join 2 dataframes using inner join on book_id columns in both dataframes.\
+    print("After filtering books with id smaller than 500 \
+          Join 2 dataframes using inner join on book_id columns in both dataframes.\
            Prior to the join filter them via book_id")
     #if there was join on multiple columns: df = df1.join(df2, (df1.x1 == df2.x1) & (df1.x2 == df2.x2))
     joined_book_rating_df = df_ratings.filter(df_ratings["book_id"] < 500)\
     .join(df_books, df_ratings.book_id == df_books.book_id, 'inner').show(1)
+    
+    
+    print("After join select only some columns")
+    joined_book_rating_df_selected = df_ratings.filter(df_ratings["book_id"] < 500)\
+    .join(df_books, df_ratings.book_id == df_books.book_id, 'inner').select(df_ratings["book_id"],
+                                                                            "original_title",
+                                                                            "user_id",
+                                                                            "rating")
+    joined_book_rating_df_selected.show(50)
+    
+    print("group by book_id joined_book_rating_df_selected and sum ratings")
+    joined_book_rating_df_selected.groupBy("book_id").sum("rating").\
+    orderBy(["sum(rating)", "book_id"], ascending = False).show()
+    
+    print("group by book_id and user_id joined_book_rating_df_selected and count ratings")
+    joined_book_rating_df_selected.groupBy(["book_id", "user_id"]).count().\
+    orderBy(["count", "book_id"], ascending = False).show()
+    
+    
+    print("group by book_id and user_id joined_book_rating_df_selected and sum ratings")
+    joined_book_rating_df_selected.groupBy(["book_id", "original_title", "user_id"]).sum("rating").\
+    orderBy(["sum(rating)", "book_id"], ascending = False).show()
+    
+    
+    #GROUP BY VS WINDOW FUNCTION
+    print("GROUP BY:")
+    per_book_id_ratings = df_ratings.groupBy("book_id").sum("rating")
+    #per_book_id_ratings.show()
+    per_book_id_ratings_joined = per_book_id_ratings.join(df_ratings, df_ratings.book_id == per_book_id_ratings.book_id)\
+        .orderBy(["sum(rating)", df_ratings["book_id"]], ascending = True)
+    per_book_id_ratings_joined.show(100)
+    
+    """#this was just to get the book title but not necessary for the window function example
+    joined_per_book_id_ratings = per_book_id_ratings.join(df_books, df_books.book_id == per_book_id_ratings.book_id, "inner").\
+        select(df_ratings["book_id"],
+               "original_title",
+               "sum(rating)")
+    joined_per_book_id_ratings.show()
+    """
+    
+    print("WINDOW FUNCTION:")
+    window_spec = Window.partitionBy("book_id")
+    df_ratings.withColumn("sum(rating)", sum("rating").over(window_spec))\
+        .orderBy(["sum(rating)", df_ratings["book_id"]], ascending = True).show(100)
     
     
     
