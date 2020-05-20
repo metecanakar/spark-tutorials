@@ -49,6 +49,14 @@ if __name__ == "__main__":
     print("investigate the data by showing top 20 rows")
     df_ratings.show()
     
+    print("Case When example: if rating == 5 then output 'rating is 5', otherwise output 'NOT 5'")
+    df_ratings.select(df_ratings.book_id, df_ratings.rating, when(df_ratings["rating"] == 5, "rating is 5").otherwise("NOT 5").alias("added_col")).show()
+    
+    print("Case When example: if rating == 4 OR 5 then output 'rating is 4 OR 5', otherwise output 'NEITHER 4 NOR 5'")
+    df_ratings.select(df_ratings.book_id, df_ratings.rating, when((df_ratings["rating"] == 5) | (df_ratings["rating"] == 4), "rating is 4 or 5")
+                      .otherwise("NEITHER 4 NOR 5").alias("added_col")).show()
+    
+    
     print("Show the number of ratings per book and order by count higher to lower")
     rating_count_per_book = df_ratings.groupBy(df_ratings["book_id"]).count().orderBy("count", ascending = False)
     rating_count_per_book.show()
@@ -76,8 +84,7 @@ if __name__ == "__main__":
            Prior to the join filter them via book_id")
     #if there was join on multiple columns: df = df1.join(df2, (df1.x1 == df2.x1) & (df1.x2 == df2.x2))
     joined_book_rating_df = df_ratings.filter(df_ratings["book_id"] < 500)\
-    .join(df_books, df_ratings.book_id == df_books.book_id, 'inner').show(1)
-    
+    .join(df_books, df_ratings.book_id == df_books.book_id, 'inner').show(1)    
     
     print("After join select only some columns")
     joined_book_rating_df_selected = df_ratings.filter(df_ratings["book_id"] < 500)\
@@ -104,7 +111,6 @@ if __name__ == "__main__":
     #GROUP BY VS WINDOW FUNCTION
     print("GROUP BY:")
     per_book_id_ratings = df_ratings.groupBy("book_id").sum("rating")
-    #per_book_id_ratings.show()
     per_book_id_ratings_joined = per_book_id_ratings.join(df_ratings, df_ratings.book_id == per_book_id_ratings.book_id)\
         .orderBy(["sum(rating)", df_ratings["book_id"]], ascending = True)
     per_book_id_ratings_joined.show(100)
@@ -121,7 +127,10 @@ if __name__ == "__main__":
     window_spec = Window.partitionBy("book_id")
     df_ratings.withColumn("sum(rating)", sum("rating").over(window_spec))\
         .orderBy(["sum(rating)", df_ratings["book_id"]], ascending = True).show(100)
+        
+        
     
+
     
     
     
