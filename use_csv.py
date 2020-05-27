@@ -45,7 +45,7 @@ def read_csvs():
    
 if __name__ == "__main__":
     df_ratings, df_books = read_csvs()
-    """
+    
     print("investigate the data by showing top 20 rows")
     df_ratings.show()
     
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         .orderBy(["sum(rating)", df_ratings["book_id"]], ascending = True)
     per_book_id_ratings_joined.show(100)
     
-    """
+    
     
     """
     #this was just to get the book title but not necessary for the window function example
