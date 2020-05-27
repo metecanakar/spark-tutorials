@@ -45,7 +45,7 @@ def read_csvs():
    
 if __name__ == "__main__":
     df_ratings, df_books = read_csvs()
-    
+    """
     print("investigate the data by showing top 20 rows")
     df_ratings.show()
     
@@ -115,22 +115,47 @@ if __name__ == "__main__":
         .orderBy(["sum(rating)", df_ratings["book_id"]], ascending = True)
     per_book_id_ratings_joined.show(100)
     
-    """#this was just to get the book title but not necessary for the window function example
+    """
+    
+    """
+    #this was just to get the book title but not necessary for the window function example
     joined_per_book_id_ratings = per_book_id_ratings.join(df_books, df_books.book_id == per_book_id_ratings.book_id, "inner").\
         select(df_ratings["book_id"],
                "original_title",
                "sum(rating)")
     joined_per_book_id_ratings.show()
-    """
+
     
     print("WINDOW FUNCTION:")
     window_spec = Window.partitionBy("book_id")
     df_ratings.withColumn("sum(rating)", sum("rating").over(window_spec))\
         .orderBy(["sum(rating)", df_ratings["book_id"]], ascending = True).show(100)
         
-        
     
-
+    """
+    print("FIRST FILTER 2 tables (book_id = 1 and rating = 1),\
+          then join, finally select: ")
+    
+    
+    filtered_books = df_books.filter(df_books["book_id"] == 1)
+    filtered_ratings = df_ratings.filter(df_ratings["rating"] == 1)
+    joined_data = filtered_books.join(filtered_ratings, filtered_books.book_id == filtered_ratings.book_id, 'left')   
+    
+    print("Select the column names with old dataframes not the joined dataframe")
+    selected_data_old_col_names = joined_data.select(
+        filtered_books["book_id"],
+        filtered_books["title"],
+        filtered_ratings["rating"])
+    selected_data_old_col_names.show()
+    
+    print("Select the column names with the joined dataframe")
+    selected_data_new_col_names = joined_data.select(
+        filtered_books["book_id"],
+        filtered_books["title"],
+        filtered_ratings["rating"])
+    
+    selected_data_new_col_names.show()
+    #basically the results are the same
     
     
     
